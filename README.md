@@ -40,7 +40,7 @@ Chrome will immediately install it.
 
 ## How to Test
 
-### ✔ On Timeline or Profile  
+### ➣ On Timeline or Profile  
 Hover on a tweet → Copy button appears inside the action icons.  
 Click → Text copied + small “Copied!” toast appears.
 
