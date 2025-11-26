@@ -49,6 +49,26 @@ function addCopyButtons() {
     const tweets = document.querySelectorAll("article:not([data-x-copy])");
 
     tweets.forEach(article => {
+
+        // --------------------------------------------
+        // SKIP "Someone followed you" notifications
+        // --------------------------------------------
+        if (article.querySelector('[data-testid="UserCell"]')) {
+            // Mark as processed to avoid re-checking
+            article.dataset.xCopy = "skip-follow-notification";
+            return;
+        }
+
+        // Also skip if no tweet text exists (like some system items)
+        if (!article.querySelector("[data-testid='tweetText']") &&
+            !article.querySelector("div[lang]")) {
+            article.dataset.xCopy = "skip-non-tweet";
+            return;
+        }
+
+        // ------------------------------------
+        // CONTINUE normally for real tweets
+        // ------------------------------------
         article.dataset.xCopy = "1";
         article.style.position = "relative"; // anchor for absolute button
 
@@ -90,88 +110,6 @@ function addCopyButtons() {
 
         wrapper.appendChild(btn);
         article.appendChild(wrapper);
-    });
-}
-
-// Try to add copy buttons to all articles that don't have one
-function addCopyButtonsLegacy() {
-    // X tweets are usually <article role="article"> or article elements
-    const articles = Array.from(document.querySelectorAll("article[role='article'], article"));
-
-    if (!articles.length) {
-        debugLog("no article elements found yet");
-    }
-
-    articles.forEach(article => {
-        if (article.dataset.xCopyAdded) return;
-        // mark as processed early
-        article.dataset.xCopyAdded = "1";
-
-        // Where to insert the button? Try header or the action bar
-        let insertTarget = article.querySelector("header") || article.querySelector("[data-testid='tweet']") || article;
-
-        if (!insertTarget) {
-            debugLog("no insert target for article", article);
-            return;
-        }
-
-        const btn = makeCopyButton();
-        btn.addEventListener("click", async (ev) => {
-            ev.stopPropagation();
-            const text = extractTweetText(article);
-            if (!text) {
-                debugLog("no tweet text found for this article");
-                btn.innerText = "No text";
-                setTimeout(() => btn.innerText = "Copy", 1200);
-                return;
-            }
-
-            try {
-                await navigator.clipboard.writeText(text);
-                btn.innerText = "Copied!";
-                setTimeout(() => btn.innerText = "Copy", 1200);
-                debugLog("copied text:", text.slice(0, 120));
-            } catch (err) {
-                debugLog("clipboard write failed:", err);
-                // Fallback: select and execCommand (may be blocked in MV3 but try)
-                const ta = document.createElement("textarea");
-                ta.value = text;
-                document.body.appendChild(ta);
-                ta.select();
-                try { document.execCommand("copy"); btn.innerText = "Copied!"; }
-                catch (e) { btn.innerText = "Err"; console.error(e); }
-                document.body.removeChild(ta);
-                setTimeout(() => btn.innerText = "Copy", 1200);
-            }
-        });
-
-        // Wrapper absolute-positioned inside article
-        const wrapper = document.createElement("div");
-        wrapper.className = "x-copy-btn-wrapper";
-        wrapper.appendChild(btn);
-
-        // Ensure article has relative position to anchor the ABS wrapper
-        article.style.position = "relative";
-
-        article.appendChild(wrapper);
-        debugLog("inserted absolute-positioned copy button");
-
-        // Append button (small container to avoid breaking layout)
-        // const wrapper = document.createElement("span");
-        // wrapper.className = "x-copy-btn-wrapper";
-        // wrapper.style.marginLeft = "8px";
-        // wrapper.appendChild(btn);
-        // // Prefer to append to header's right side if possible
-        // // If header contains a flex container, append to it; otherwise append at end
-        // try {
-        //     // try to find a logical action bar (right of header)
-        //     const headerRight = insertTarget.querySelector("div[dir='auto'], div[role='group']") || insertTarget;
-        //     headerRight.appendChild(wrapper);
-        //     debugLog("inserted button into", headerRight);
-        // } catch (e) {
-        //     insertTarget.appendChild(wrapper);
-        //     debugLog("fallback inserted button into article");
-        // }
     });
 }
 
