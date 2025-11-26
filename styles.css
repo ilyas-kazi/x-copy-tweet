@@ -1,0 +1,25 @@
+/* Position button at top-right INSIDE tweet container, but OUTSIDE text flow */
+.x-copy-btn-wrapper {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 10;
+}
+
+.x-copy-btn {
+    cursor: pointer;
+    padding: 4px 8px;
+    font-size: 12px;
+    border-radius: 6px;
+    border: 1px solid var(--twitter-border-color, #444);
+    background: var(--twitter-background-alt, #2f3336);
+    color: var(--twitter-text-color, #fff);
+    opacity: 0.6;
+    transition: all 0.2s;
+}
+
+/* Hover */
+.x-copy-btn:hover {
+    opacity: 1;
+    background: var(--twitter-background-hover, #3a3f44);
+}
