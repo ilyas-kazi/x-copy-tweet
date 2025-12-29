@@ -1,9 +1,9 @@
-# X Copy Tweet - Cross-Browser Extension
+<p align="center"><img width="128" height="128" src="https://raw.githubusercontent.com/ilyas-kazi/x-copy-tweet/5527a8a18e5d69c43dede5696a45017225ab9de1/src/icons/icon.svg"></p>
+<h1 align="center">X Copy Tweet - Cross-Browser Extension</h1>
 
+## Description
 A lightweight browser extension that adds a clean **Copy Tweet** button to every real tweet on **X.com** (formerly Twitter).  
 It works across **Chrome, Edge, Brave, Opera, Vivaldi, Firefox, and Safari** using a unified `/src` codebase with platform-specific build folders.
-
----
 
 ## Screenshot
 
