@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>X Copy Tweet regression tests</title>
+    <style>
+        body { font: 16px system-ui, sans-serif; margin: 32px; }
+        li { margin: 8px 0; white-space: pre-wrap; }
+        #fixtures { position: absolute; left: -10000px; width: 600px; }
+    </style>
+</head>
+<body>
+    <h1>X Copy Tweet regression tests</h1>
+    <p>Runs against the shared content script with real DOM mutations and a mocked clipboard. No dependencies or real clipboard writes.</p>
+    <p id="status">Running…</p>
+    <ol id="results"></ol>
+    <div id="fixtures" aria-hidden="true"></div>
+    <script src="../src/content.js"></script>
+    <script src="content.test.js"></script>
+</body>
+</html>

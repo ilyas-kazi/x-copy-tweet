@@ -123,6 +123,10 @@ Works via:
 - `navigator.clipboard.writeText`
 - Safari/Firefox fallback using `execCommand("copy")`
 
+For collapsed long tweets, both copy options automatically click the native **Show more** control next to the target text and wait up to five seconds for expansion. The tweet stays expanded afterward. If X only offers a link to another page or does not expand the text in place, the extension shows **Could not expand tweet** and leaves the clipboard unchanged.
+
+No additional permissions, API requests, or third-party dependencies are required. This relies on X's current DOM structure and native expansion behavior.
+
 ---
 
 # Build Workflow
@@ -145,6 +149,12 @@ Copy them into:
 ```
 
 (Optionally automate using a build script.)
+
+### Regression tests
+
+Open `tests/content.html` in a browser. It runs the shared content script against real DOM fixtures, including asynchronous text replacement, CSS-only folding, both copy menus, clipboard fallback, quoted tweets, and failed expansion. Clipboard writes are mocked; the tests do not touch your clipboard or contact X.
+
+All tests should report **PASS**. For a live check, load the relevant browser build, find a collapsed long tweet, and use each copy option without clicking **Show more** yourself. Verify that the copied text includes the ending and that the username option retains its author header.
 
 ---
 

@@ -96,6 +96,71 @@ function extractTweetText(tweetEl) {
     return joined;
 }
 
+// Helper: expand only the selected tweet before reading its full text
+const pendingExpansions = new WeakMap();
+
+function getFullTweetText(tweetEl) {
+    if (pendingExpansions.has(tweetEl)) return pendingExpansions.get(tweetEl);
+
+    const textSelector = "[data-testid='tweetText'], div[lang]";
+    const moreSelector = "[data-testid='tweet-text-show-more-link']";
+    const textNode = tweetEl.querySelector(textSelector);
+    const text = textNode?.innerText?.trim() ?? "";
+    const tweetLink = tweetEl.querySelector("a[href*='/status/']")?.getAttribute("href");
+    const wasClipped = textNode && textNode.scrollHeight > textNode.clientHeight;
+    // Scope to the text's container so a quoted tweet is not expanded instead.
+    const showMore = textNode?.parentElement?.querySelector(moreSelector);
+
+    if (!showMore) return text;
+    // Some X layouts link to a detail page instead of expanding in place.
+    if (showMore.closest("a[href]")) return Promise.reject(new Error("Tweet requires navigation"));
+
+    const expansion = new Promise((resolve, reject) => {
+        function finish(error, fullText) {
+            observer.disconnect();
+            clearTimeout(timeout);
+            if (error) reject(error);
+            else resolve(fullText);
+        }
+
+        function checkExpanded() {
+            if (!tweetEl.isConnected) {
+                finish(new Error("Tweet was removed"));
+                return;
+            }
+            if (tweetLink && tweetEl.querySelector("a[href*='/status/']")?.getAttribute("href") !== tweetLink) {
+                finish(new Error("Tweet changed during expansion"));
+                return;
+            }
+
+            // X may replace the text node when rendering the expanded tweet.
+            const currentNode = tweetEl.querySelector(textSelector);
+            const currentText = currentNode?.innerText?.trim() ?? "";
+            const stillCollapsed = currentNode?.parentElement?.querySelector(moreSelector);
+            // CSS-only folding can keep the full text in the DOM throughout.
+            const layoutExpanded = wasClipped && currentNode && currentNode.scrollHeight <= currentNode.clientHeight;
+            if (currentText && !stillCollapsed && (currentText !== text || layoutExpanded)) {
+                finish(null, currentText);
+            }
+        }
+
+        const observer = new MutationObserver(checkExpanded);
+        observer.observe(tweetEl, { childList: true, subtree: true, characterData: true, attributes: true });
+        const timeout = setTimeout(() => finish(new Error("Tweet expansion timed out")), 5000);
+
+        try {
+            showMore.click();
+            checkExpanded();
+        } catch (error) {
+            finish(error);
+        }
+    });
+
+    pendingExpansions.set(tweetEl, expansion);
+    expansion.then(() => pendingExpansions.delete(tweetEl), () => pendingExpansions.delete(tweetEl));
+    return expansion;
+}
+
 // Create the copy button element
 function makeCopyButton() {
     const btn = document.createElement("button");
@@ -186,8 +251,14 @@ function addCopyButtons() {
             e.stopPropagation();
             e.preventDefault();
             
-            const textNode = article.querySelector("[data-testid='tweetText'], div[lang]");
-            const text = cleanText(textNode?.innerText?.trim() ?? "");
+            let text;
+            try {
+                text = cleanText(await getFullTweetText(article));
+            } catch (err) {
+                showToast(article, "Could not expand tweet");
+                closeMenu(menu);
+                return;
+            }
 
             if (!text) {
                 showToast(article, "No text");
@@ -212,8 +283,14 @@ function addCopyButtons() {
             e.stopPropagation();
             e.preventDefault();
             
-            const textNode = article.querySelector("[data-testid='tweetText'], div[lang]");
-            const text = cleanText(textNode?.innerText?.trim() ?? "");
+            let text;
+            try {
+                text = cleanText(await getFullTweetText(article));
+            } catch (err) {
+                showToast(article, "Could not expand tweet");
+                closeMenu(menu);
+                return;
+            }
             const username = extractUsername(article);
             const displayName = extractDisplayName(article);
 
@@ -324,8 +401,8 @@ function fallbackCopy(text, article) {
     document.body.appendChild(ta);
     ta.select();
     try {
-        document.execCommand("copy");
-        showToast(article, "Copied!");
+        const copied = document.execCommand("copy");
+        showToast(article, copied ? "Copied!" : "Copy failed");
     } catch (e) {
         showToast(article, "Copy failed");
     }
